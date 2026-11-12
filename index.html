@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindle セール一覧 タイトル別まとめ</title>
+<meta name="description" content="Amazon の Kindle セール一覧を、同じタイトルの巻ごとに1枚にまとめて表示するブックマークレット(非公式)">
+<style>
+  :root { --ink:#16191f; --sub:#5a6170; --line:#e3e6eb; --bg:#f6f7f9; --accent:#232f3e; --hl:#ff9900; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.75; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 26px; line-height:1.4; margin: 0 0 8px; }
+  .lead { color: var(--sub); margin: 0 0 32px; }
+  h2 { font-size: 18px; margin: 40px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 22px; }
+  .bm-row { display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin: 8px 0 4px; }
+  a.bm { display:inline-block; padding:12px 22px; border-radius:24px; background:var(--accent); color:#fff;
+    font-weight:bold; text-decoration:none; cursor:grab; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+  a.bm:active { cursor:grabbing; }
+  a.bm.sub { background:#fff; color:var(--accent); border:2px solid var(--accent); box-shadow:none; }
+  a.bm[aria-disabled="true"] { opacity:.45; pointer-events:none; }
+  .hint { color: var(--sub); font-size: 14px; }
+  ol, ul { padding-left: 1.4em; margin: 8px 0; }
+  li { margin: 4px 0; }
+  code, textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  textarea { width:100%; height:84px; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical; }
+  button.copy { margin-top:8px; padding:8px 16px; border-radius:6px; border:1px solid var(--accent);
+    background:#fff; color:var(--accent); font-weight:bold; cursor:pointer; }
+  .note { border-left: 4px solid var(--hl); background:#fff8ec; padding: 12px 16px; border-radius: 0 8px 8px 0; }
+  details { margin-top: 12px; }
+  summary { cursor:pointer; font-weight:bold; }
+  footer { margin-top: 48px; color: var(--sub); font-size: 13px; }
+  #err { color:#b12704; font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Kindle セール一覧 タイトル別まとめ</h1>
+  <p class="lead">Amazon の Kindle セール一覧は、同じ作品の1巻・2巻・3巻…で画面が埋まりがちです。
+    このブックマークレットを押すと、セール対象を全ページ読み込み、<b>作品ごとに1枚のカード</b>にまとめて表示します。
+    カードを押すと、そのセール内をその作品名で絞り込んだ Amazon の検索結果が開きます。</p>
+
+  <div class="card">
+    <b>パソコン:下のボタンをブックマークバーにドラッグ</b>
+    <div class="bm-row">
+      <a class="bm" id="bm-loader" href="#" aria-disabled="true">Kindleまとめ</a>
+      <span class="hint">← これをブックマークバーへ。<br>ここでクリックしても動きません。</span>
+    </div>
+    <p class="hint" id="err"></p>
+    <ol>
+      <li>Amazon で Kindle のセール一覧(または検索結果)を開く</li>
+      <li>ブックマークバーの「Kindleまとめ」を押す</li>
+      <li>読み込みが終わると(20ページで約25秒)、作品ごとの一覧が表示されます</li>
+    </ol>
+    <p class="hint">ブックマークバーが見えないときは、Chrome / Edge なら <code>Ctrl+Shift+B</code>(Mac は <code>⌘+Shift+B</code>)で表示できます。</p>
+  </div>
+
+  <h2>スマホで使う</h2>
+  <p>スマホはドラッグできないので、ブックマークを手で作ります。</p>
+  <ol>
+    <li>下のコードをコピーする</li>
+    <li>このページをブックマークに追加し、名前を「Kindleまとめ」にする</li>
+    <li>そのブックマークを編集し、URL をコピーしたコードに置き換える</li>
+    <li>Amazon のセール一覧を開いたら、ブックマークから「Kindleまとめ」を選ぶ<br>
+      <span class="hint">(Android の Chrome では、ブックマーク一覧からではなく、アドレスバーに「Kindleまとめ」と入力して候補から選ぶと動きます)</span></li>
+  </ol>
+  <textarea id="code-loader" readonly></textarea>
+  <button class="copy" data-target="code-loader">コードをコピー</button>
+
+  <h2>まとめ画面でできること</h2>
+  <ul>
+    <li>作品ごとに表紙、「セール対象 ○冊 / 全○巻」、価格帯、合計金額を表示</li>
+    <li>作品名での絞り込み、並べ替え(元の並び順 / 対象冊数 / 最安値 / 合計金額 / タイトル順)</li>
+    <li>「全並び順で読み込む」で取りこぼしを減らせます(下の注意を参照。2〜3分かかります)</li>
+  </ul>
+
+  <h2>注意</h2>
+  <div class="note">
+    <ul>
+      <li><b>Amazon 非公式のツールです。</b>Amazon のページの作りが変わると動かなくなることがあります。</li>
+      <li>Amazon は1つの並び順につき20ページ(約480冊)までしか表示しないため、大きなセールでは全件を拾えません。</li>
+      <li>読み込みはあなたのブラウザから普通のページ閲覧と同じように行います。何度も続けて実行すると、Amazon が確認画面を出して止まることがあります。その場合は少し時間をおいてください。</li>
+      <li>シリーズ情報のない本は、タイトル文字から作品を推測してまとめるので、分かれて表示されることがあります。</li>
+    </ul>
+  </div>
+
+  <h2>そのほかの使い方</h2>
+  <details>
+    <summary>サイトに依存しない「全部入り」版</summary>
+    <p>上のボタンは、押すたびにこのサイトから本体を読み込みます(更新が自動で反映されます)。
+      こちらは本体を丸ごとブックマークに入れた版で、このサイトが止まっても使えますが、更新されたら登録し直す必要があります。</p>
+    <div class="bm-row"><a class="bm sub" id="bm-full" href="#" aria-disabled="true">Kindleまとめ(全部入り)</a></div>
+    <textarea id="code-full" readonly></textarea>
+    <button class="copy" data-target="code-full">コードをコピー</button>
+  </details>
+  <details>
+    <summary>Tampermonkey などのユーザースクリプトで使う</summary>
+    <p>ユーザースクリプト拡張を入れている方は、<a href="kindle-grouper.user.js">kindle-grouper.user.js</a> を開くとインストールできます。
+      Amazon の一覧ページの右下に「タイトル別にまとめる」ボタンが出ます。</p>
+  </details>
+  <details>
+    <summary>中身を確認したい</summary>
+    <p>動いているコードは <a href="kindle-grouper.js">kindle-grouper.js</a> ですべてです。
+      Amazon の一覧ページを読み込んで並べ替えるだけで、外部への送信やデータの保存(ブラウザのタブ内の一時保存を除く)はしていません。</p>
+  </details>
+
+  <footer>Amazon、Kindle は Amazon.com, Inc. またはその関連会社の商標です。本ツールは Amazon とは関係ありません。</footer>
+</main>
+
+<script>
+(function () {
+  var scriptUrl = new URL('kindle-grouper.js', location.href).href;
+
+  // ローダー型: 押すたびにこのサイトの本体を読み込む(1時間単位でキャッシュ更新)
+  var loader = "javascript:(function(){if(window.__ksgOpen){window.__ksgOpen();return}" +
+    "var s=document.createElement('script');s.src='" + scriptUrl + "?v='+Math.floor(Date.now()/36e5);" +
+    "s.onerror=function(){alert('Kindleまとめ: 本体を読み込めませんでした')};document.body.appendChild(s)})()";
+  setBookmarklet('bm-loader', 'code-loader', loader);
+
+  if (location.protocol === 'file:') {
+    document.getElementById('err').textContent =
+      'このページはパソコン上のファイルとして開かれています。Webサイトに公開してから使ってください。';
+  }
+
+  // 全部入り型: 本体をそのままブックマークに埋め込む
+  fetch(scriptUrl).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    return r.text();
+  }).then(function (code) {
+    code = code.replace(/^\/\*![\s\S]*?\*\/\s*/, '');
+    setBookmarklet('bm-full', 'code-full', 'javascript:' + encodeURIComponent(code));
+  }).catch(function () {
+    document.getElementById('code-full').value = '本体を読み込めませんでした。';
+  });
+
+  function setBookmarklet(linkId, areaId, href) {
+    var a = document.getElementById(linkId);
+    a.href = href;
+    a.removeAttribute('aria-disabled');
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      a.blur();
+      var hint = document.createElement('span');
+      hint.className = 'hint';
+      hint.textContent = '← クリックではなく、ブックマークバーへドラッグしてください';
+      if (!a.nextElementSibling || a.nextElementSibling.dataset.tmp !== '1') {
+        hint.dataset.tmp = '1';
+        a.after(hint);
+        setTimeout(function () { hint.remove(); }, 4000);
+      }
+    });
+    document.getElementById(areaId).value = href;
+  }
+
+  document.querySelectorAll('button.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var ta = document.getElementById(b.dataset.target);
+      var done = function () { var t = b.textContent; b.textContent = 'コピーしました'; setTimeout(function () { b.textContent = t; }, 2000); };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); document.execCommand('copy'); done(); });
+      } else { ta.select(); document.execCommand('copy'); done(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
