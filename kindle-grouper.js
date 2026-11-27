@@ -342,7 +342,8 @@
       }
       cards.forEach(c => {
         const head = [...c.querySelectorAll('.order-header__header-list-item')].map(txt);
-        const date = (head.find(h => h.startsWith('注文日')) || '').replace(/^注文日\s*/, '');
+        // 「注文日」のほか「サブスクリプション課金日」などもあるので、最初に出てくる日付を使う
+        const date = (head.join(' ').match(/\d{4}年\d{1,2}月\d{1,2}日/) || [''])[0];
         const totalText = (head.find(h => h.startsWith('合計')) || '').replace(/^合計\s*/, '');
         const total = parseInt(totalText.replace(/[^\d]/g, ''), 10);
         const orderId = ((head.find(h => h.startsWith('注文番号')) || '').match(/[A-Z0-9]{3}-\d{7}-\d{7}/) || [])[0] || '';
