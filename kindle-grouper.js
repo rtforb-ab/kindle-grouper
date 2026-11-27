@@ -336,8 +336,9 @@
 
     function parseDoc(doc) {
       const orders = [];
+      let skipped = 0;
       const cards = [...doc.querySelectorAll('.order-card')];
-      if (cards.some(c => /SiegeClientSideDecryption/.test(c.innerHTML) && !c.querySelector('.yohtmlc-product-title'))) {
+      if (cards.some(c => /SiegeClientSideDecryption/.test(c.innerHTML) && !c.querySelector('.yohtmlc-product-title, .yo-enhanced-title'))) {
         throw new Error('注文内容が読み取れない形式で返されました(Amazon の仕様変更の可能性があります)');
       }
       cards.forEach(c => {
@@ -349,14 +350,15 @@
         const orderId = ((head.find(h => h.startsWith('注文番号')) || '').match(/[A-Z0-9]{3}-\d{7}-\d{7}/) || [])[0] || '';
         const detail = [...c.querySelectorAll('a')].find(a => /注文内容/.test(a.textContent));
         const cardIsKindle = /Kindle版/.test(c.textContent);
-        const boxes = [...c.querySelectorAll('.item-box')];
+        // 商品は通常の縦並び(.item-box)か、まとめ買い時の横並びカード(.yo-enhanced-item-carousel__card)
+        const boxes = [...c.querySelectorAll('.item-box, .yo-enhanced-item-carousel__card')];
         const items = [];
         (boxes.length ? boxes : [c]).forEach(b => {
-          const t = b.querySelector('.yohtmlc-product-title');
+          const t = b.querySelector('.yohtmlc-product-title, .yo-enhanced-title');
           if (!t) return;
           const a = t.querySelector('a') || t.closest('a') || b.querySelector('a[href*="/dp/"]');
           const href = a ? a.getAttribute('href') : '';
-          const img = b.querySelector('.product-image img, img');
+          const img = b.querySelector('.product-image img, .yo-enhanced-card-image img, img');
           items.push({
             title: txt(t),
             asin: ((href || '').match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/) || [])[1] || '',
@@ -364,7 +366,7 @@
             kindle: /Kindle版/.test(b.textContent) || (cardIsKindle && (boxes.length <= 1)),
           });
         });
-        if (!items.length) return;
+        if (!items.length) { skipped++; return; }
         orders.push({
           date, total: isNaN(total) ? null : total, orderId,
           detail: detail ? detail.getAttribute('href') : (orderId ? '/your-orders/order-details?orderID=' + orderId : ''),
@@ -373,14 +375,14 @@
       });
       const last = doc.querySelector('.a-pagination li:last-child');
       const hasNext = !!(last && last.querySelector('a'));
-      return { orders, hasNext, cardCount: cards.length };
+      return { orders, hasNext, skipped, cardCount: cards.length };
     }
 
     async function collect(period, onProgress) {
       const periods = period === 'all' ? yearPeriods() : [period];
       const orders = [];
       const seen = new Set();
-      let error = null;
+      let error = null, skipped = 0;
       outer:
       for (let pi = 0; pi < periods.length; pi++) {
         for (let p = 0; p < MAX_PAGES_PER_PERIOD; p++) {
@@ -393,6 +395,7 @@
             error = e.message;
             break outer;
           }
+          skipped += r.skipped;
           r.orders.forEach(o => {
             const key = o.orderId || (o.date + o.items.map(i => i.asin).join());
             if (seen.has(key)) return;
@@ -403,7 +406,7 @@
           await sleep(DELAY_MS);
         }
       }
-      return { orders, error };
+      return { orders, error, skipped };
     }
 
     // 行に展開: Kindle はタイトル別グループへ、それ以外は1商品1行
@@ -429,7 +432,8 @@
       const groups = [...kindle.values()];
       groups.forEach(g => {
         g.rows.sort((a, b) => (a.vol ?? 1e9) - (b.vol ?? 1e9) || a.order - b.order);
-        g.sum = g.rows.reduce((s, r) => s + (r.price || 0), 0);
+        // まとめ買いの巻は1冊ごとの金額が分からないので、全巻の金額が分かるときだけ合計を出す
+        g.sum = g.rows.every(r => r.price != null) ? g.rows.reduce((s, r) => s + r.price, 0) : null;
         g.latest = g.rows.reduce((m, r) => (r.order < m.order ? r : m), g.rows[0]).date;
       });
       return { others, groups };
@@ -520,7 +524,8 @@
         if (!data.error) cacheSet(cacheKey, data);
       }
       state = { orders: data.orders, ...split(data.orders) };
-      msg.textContent = data.error ? `途中で停止しました (${data.error})。取得できた分だけ表示しています。` : '';
+      msg.textContent = data.error ? `途中で停止しました (${data.error})。取得できた分だけ表示しています。`
+        : data.skipped ? `${data.skipped} 件の注文は商品名を読み取れなかったため表示していません。` : '';
       render();
     }
 
