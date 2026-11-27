@@ -35,7 +35,7 @@
   #ksg-btn{position:fixed;right:16px;bottom:16px;z-index:99998;padding:10px 16px;border:0;border-radius:22px;
     background:#232f3e;color:#fff;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   #ksg-btn:hover{background:#37475a}
-  #ksg-ov{position:fixed;inset:0;z-index:99999;background:#f3f3f3;color:#111;overflow:auto;font-size:13px}
+  #ksg-ov{position:fixed;inset:0;z-index:99999;background:#f3f3f3;color:#111;overflow-y:auto;overflow-x:hidden;font-size:13px}
   #ksg-hd{position:sticky;top:0;background:#232f3e;color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;z-index:1}
   #ksg-hd b{font-size:15px}
   #ksg-hd input[type=text],#ksg-hd select{padding:5px 8px;border-radius:4px;border:0;font-size:13px}
@@ -62,7 +62,7 @@
   .ksg-title>summary .ksg-tname{font-weight:bold;flex:1}
   .ksg-meta{color:#565959;font-size:12px;white-space:nowrap}
   table.ksg-tbl{width:100%;border-collapse:collapse}
-  .ksg-tbl td{padding:6px 10px;border-top:1px solid #eee;vertical-align:top}
+  .ksg-tbl td{padding:6px 10px;border-top:1px solid #eee;vertical-align:top;overflow-wrap:anywhere}
   .ksg-tbl td.d{white-space:nowrap;color:#565959;width:7.5em}
   .ksg-tbl td.p{white-space:nowrap;text-align:right;width:9em}
   .ksg-tbl td.o{white-space:nowrap;width:5em}
